@@ -39,15 +39,16 @@ def beCusOut(custom_out):
     sys.stdout = custom_out
 
 class __BeautyLogOut__:
-    def __init__(self, func_name):
+    def __init__(self, func_name, file_dir = os.path.dirname(__file__)):
         self._buff = ''
         self.func_name = func_name
+        self.file_dir = file_dir
 
     def write(self, out_stream):
         if out_stream not in ['', '\r', '\n', '\r\n']: # 换行符不单独输出一行log
             self_out = sys.stdout
             beStdOut() # 设为标准输出
-            writeLog("<%s> %s" % (self.func_name, out_stream))
+            writeLog("<%s> %s" % (self.func_name, out_stream), self.file_dir)
             beCusOut(self_out) # 设为定制输出
 
     def flush(self):
@@ -57,7 +58,7 @@ class __BeautyLogOut__:
 def logDecoration(func):
     
     @wraps(func)
-    def log(self,*args, **kwargs):
+    def log(*args, **kwargs):
         try:
             file_dir = os.path.dirname(func.__code__.co_filename)
             caller_name = sys._getframe(1).f_code.co_name
@@ -66,13 +67,15 @@ def logDecoration(func):
             if caller_name != '<module>': # 若函数中调用了子函数，应打印调用者信息
                 writeLog("<%s> is calling [%s]" % (caller_name, func.__name__), file_dir)
             # writeLog("<%s> is called" % func.__name__, file_dir)
+            func_args = str(args)
+            print(func_args)
             if isinstance(func,FunctionType):
                 writeLog("<%s> is called as a function" % func.__name__, file_dir)
             else:
                 writeLog("<%s> is called as a method" % func.__name__, file_dir)
                 
-            beCusOut( __BeautyLogOut__(func.__name__)) # 设为定制输出
-            func_return = str(func(self,*args, **kwargs))
+            beCusOut( __BeautyLogOut__(func.__name__, file_dir)) # 设为定制输出
+            func_return = str(func(*args, **kwargs))
 
             beStdOut() # 设为标准输出
             writeLog("<%s> return [%s]" % (func.__name__, func_return), file_dir)

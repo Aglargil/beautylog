@@ -14,3 +14,7 @@ Let your code generate logs automatically
     1. 添加显示主函数对子函数调用关系的内容
     2. 兼容用户定义函数中存在try-expect语句的情况
     3. 将log修饰符从函数实现改为类实现
+# Version:0.1.1   
+    2020/9/2 skwood0105
+    
+    修复__BeautyLogOut__路径问题
