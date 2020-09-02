@@ -57,7 +57,7 @@ class __BeautyLogOut__:
 def logDecoration(func):
     
     @wraps(func)
-    def log(*args, **kwargs):
+    def log(self,*args, **kwargs):
         try:
             file_dir = os.path.dirname(func.__code__.co_filename)
             caller_name = sys._getframe(1).f_code.co_name
@@ -72,7 +72,7 @@ def logDecoration(func):
                 writeLog("<%s> is called as a method" % func.__name__, file_dir)
                 
             beCusOut( __BeautyLogOut__(func.__name__)) # 设为定制输出
-            func_return = str(func(*args, **kwargs))
+            func_return = str(func(self,*args, **kwargs))
 
             beStdOut() # 设为标准输出
             writeLog("<%s> return [%s]" % (func.__name__, func_return), file_dir)
@@ -139,6 +139,7 @@ if __name__ == "__main__":
             raise Exception("ERERERER")
         except Exception as err:
             print('except')
+    main()
     class test:
         @logDecoration
         def m(self):
@@ -153,4 +154,4 @@ if __name__ == "__main__":
     Test=test()
     Test.m()
     main()
-   
+
