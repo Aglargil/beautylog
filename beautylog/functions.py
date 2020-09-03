@@ -3,7 +3,7 @@ from functools import wraps
 import os
 import sys
 import traceback
-from types import MethodType,FunctionType
+import _ctypes
 STDOUT = sys.stdout
 #python setup.py sdist bdist_wheel 
 #python -m twine upload dist/*
@@ -56,7 +56,7 @@ class __BeautyLogOut__:
 
 
 def logDecoration(func):
-    
+
     @wraps(func)
     def log(*args, **kwargs):
         try:
@@ -67,13 +67,20 @@ def logDecoration(func):
             if caller_name != '<module>': # 若函数中调用了子函数，应打印调用者信息
                 writeLog("<%s> is calling [%s]" % (caller_name, func.__name__), file_dir)
             # writeLog("<%s> is called" % func.__name__, file_dir)
-            func_args = str(args)
-            print(func_args)
-            if isinstance(func,FunctionType):
-                writeLog("<%s> is called as a function" % func.__name__, file_dir)
+            
+            try:
+                func_args = str(args[0]).strip('<>').split(' ')
+                func_id = int(func_args[-1], 16) # 获取对象地址
+                func_obj = _ctypes.PyObj_FromPtr(func_id) # 通过_ctypes的api进行对内存地址的对象
+                func_obj_method = str(dir(func_obj))
+            except:
+                func_args = str(args)
+                func_obj_method = [func.__name__]
+            if func.__name__ in func_obj_method and 'object' in func_args:
+                writeLog("<%s> is called as a method" % func.__name__, file_dir) 
             else:
-                writeLog("<%s> is called as a method" % func.__name__, file_dir)
-                
+                writeLog("<%s> is called as a function" % func.__name__, file_dir)
+
             beCusOut( __BeautyLogOut__(func.__name__, file_dir)) # 设为定制输出
             func_return = str(func(*args, **kwargs))
 
@@ -104,7 +111,20 @@ class LogDecorationClass:
                 beStdOut() # 设为标准输出
                 if caller_name != '<module>': # 若函数中调用了子函数，应打印调用者信息
                     writeLog("<%s> is calling [%s]" % (caller_name, func.__name__), file_dir)
-                writeLog("<%s> is called" % func.__name__, file_dir)
+                # writeLog("<%s> is called" % func.__name__, file_dir)
+
+                try:
+                    func_args = str(args[0]).strip('<>').split(' ')
+                    func_id = int(func_args[-1], 16) # 获取对象地址
+                    func_obj = _ctypes.PyObj_FromPtr(func_id) # 通过_ctypes的api进行对内存地址的对象
+                    func_obj_method = str(dir(func_obj))
+                except:
+                    func_args = str(args)
+                    func_obj_method = [func.__name__]
+                if func.__name__ in func_obj_method and 'object' in func_args:
+                    writeLog("<%s> is called as a method" % func.__name__, file_dir) 
+                else:
+                    writeLog("<%s> is called as a function" % func.__name__, file_dir)
 
                 beCusOut( __BeautyLogOut__(func.__name__)) # 设为定制输出
                 func_return = str(func(*args, **kwargs))
@@ -122,7 +142,7 @@ class LogDecorationClass:
         return log
 if __name__ == "__main__":
 
-    @LogDecorationClass()
+    @logDecoration
     def my():
         print('a')
         print('b')
@@ -131,9 +151,9 @@ if __name__ == "__main__":
             raise Exception("ERERERER")
         except Exception as err:
             print('except')
-        
-    @LogDecorationClass()
-    def main():
+
+    @logDecoration
+    def main(args):
         print('main1')
         my()
         print("main2")
@@ -142,19 +162,13 @@ if __name__ == "__main__":
             raise Exception("ERERERER")
         except Exception as err:
             print('except')
-    main()
-    class test:
+    class Test:
         @logDecoration
-        def m(self):
-            print('main1')
-            my()
-            print("main2")
-            try:
-                print('try')
-                raise Exception("ERERERER")
-            except Exception as err:
-                print('except')
-    Test=test()
-    Test.m()
-    main()
-
+        def main(self):
+            print('I\'m in the test_main')
+    test = Test()
+    test.main() # 调用类中方法
+    print('this is the split line----------------------------')
+    my() # 调用函数
+    print('this is the split line----------------------------')
+    main(test) # bug
