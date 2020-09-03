@@ -18,3 +18,8 @@ Let your code generate logs automatically
     2020/9/2 skwood0105
     
     修复__BeautyLogOut__路径问题
+# Version:0.1.2   
+    2020/9/3 skwood0105
+    
+    增添判断调用是函数or方法的功能
+    当所调用函数首参数是对象，且其中含有同名的类内成员函数时，无法判断（bug）
