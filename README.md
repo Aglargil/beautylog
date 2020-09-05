@@ -23,3 +23,7 @@ Let your code generate logs automatically
     
     增添判断调用是函数or方法的功能
     当所调用函数首参数是对象，且其中含有同名的类内成员函数时，无法判断（bug）
+# Version:0.1.3   
+    2020/9/5 Aglargil
+    
+    优化类内成员函数使用装饰器时log输出的内容
