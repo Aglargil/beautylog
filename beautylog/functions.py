@@ -57,7 +57,7 @@ class __BeautyLogOut__:
 
 def logDecoration(func):
 
-    @wraps(func)
+    @wraps(func) 
     def log(*args, **kwargs):
         try:
             file_dir = os.path.dirname(func.__code__.co_filename)
@@ -65,26 +65,24 @@ def logDecoration(func):
             # 判断是否为类内调用
             try:
                 func_args = str(args[0]).strip('<>').split(' ')
-                func_id = int(func_args[-1], 16) # 获取对象地址
+                class_id = int(func_args[-1], 16) # 获取对象地址
                 func_class = func_args[0].split('.')[-1]
-                func_obj = _ctypes.PyObj_FromPtr(func_id) # 通过_ctypes的api进行对内存地址的对象
-                func_obj_method = str(dir(func_obj))
+                # print(int(str(func.__code__).replace(',', '').strip('<>').split(' ')[4], 16)) # 查看函数地址
             except:
                 func_args = str(args)
-                func_obj_method = [func.__name__]
-            if func.__name__ in func_obj_method and 'object' in func_args: # 若为类内调用
-                func_name = '<%s %s><%s>' % (func_class, func_id, func.__name__)
-                caller_name = '<%s %s><%s>' % (func_class, func_id, caller_name)
+            if '.' in func.__qualname__ and '<local>' not in func.__qualname__: # 若为类内调用
+                func_name = '<%s %s><%s>' % (func_class, class_id, func.__name__)
+                caller_name = '<%s %s><%s>' % (func_class, class_id, caller_name)
             else:
                 func_name = func.__name__
 
             beStdOut() # 设为标准输出
             if '<module>' not in caller_name: # 若函数中调用了子函数，应打印调用者信息
                 writeLog("[%s] is calling [%s]" % (caller_name, func_name), file_dir)
-            # writeLog("<%s> is called" % func.__name__, file_dir)
+            writeLog("[%s] is called" % func_name, file_dir)
 
             beCusOut( __BeautyLogOut__(func_name, file_dir)) # 设为定制输出
-            func_return = str(func(*args, **kwargs))
+            func_return = func(*args, **kwargs)
 
             beStdOut() # 设为标准输出
             writeLog("[%s] return [%s]" % (func_name, func_return), file_dir)
@@ -165,6 +163,7 @@ if __name__ == "__main__":
             raise Exception("ERERERER")
         except Exception as err:
             print('except')
+
     class Test:
         @logDecoration
         def main(self):
@@ -173,9 +172,20 @@ if __name__ == "__main__":
         def main2(self):
             self.main()
             print('main2')
+
+    @logDecoration
+    def person(name):
+        def child():
+            return 'Hello child of ' + name
+        return child
     test = Test()
     test.main2() # 调用类中方法
-    print('this is the split line----------------------------')
+    print('this is the split line-------------------------------------')
     my() # 调用函数
-    print('this is the split line----------------------------')
-    main(test) # bug
+    print('this is the split line-------------------------------------')
+    main(test) # 调用类内方法同名函数
+    print('this is the split line-------------------------------------')
+    result=person("Me!") # 需要优化的情况，返回值为函数名
+    result()
+
+    

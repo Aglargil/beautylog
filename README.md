@@ -27,3 +27,7 @@ Let your code generate logs automatically
     2020/9/5 Aglargil
     
     优化类内成员函数使用装饰器时log输出的内容
+# Version:0.1.4   
+    2020/9/5 skwood0105
+    
+    使用函数__qualname__属性判断调用是函数or方法，且解决了0.1.2中出现的bug
