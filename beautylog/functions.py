@@ -4,10 +4,20 @@ import os
 import sys
 import traceback
 import _ctypes
+
+IS_CUS_ENABLE = True
 STDOUT = sys.stdout
 #python setup.py sdist bdist_wheel 
 #python -m twine upload dist/*
 
+
+def set_cus_enable():
+    global IS_CUS_ENABLE
+    IS_CUS_ENABLE = True
+
+def set_cus_disable():
+    global IS_CUS_ENABLE
+    IS_CUS_ENABLE = False
 
 
 def writeFile(file_path, mode, content):
@@ -35,8 +45,9 @@ def beStdOut():
     sys.stdout = STDOUT
 
 # 让输出变为定制输出
-def beCusOut(custom_out):
-    sys.stdout = custom_out
+def beCusOut(custom_out, is_enable=True):
+    if IS_CUS_ENABLE and is_enable:
+        sys.stdout = custom_out
 
 class __BeautyLogOut__:
     def __init__(self, func_name, file_dir = os.path.dirname(__file__)):
@@ -81,13 +92,13 @@ def logDecoration(func):
                 writeLog("[%s] is calling [%s]" % (caller_name, func_name), file_dir)
             writeLog("[%s] is called" % func_name, file_dir)
 
-            beCusOut( __BeautyLogOut__(func_name, file_dir)) # 设为定制输出
+            beCusOut(__BeautyLogOut__(func_name, file_dir)) # 设为定制输出
             func_return = func(*args, **kwargs)
 
             beStdOut() # 设为标准输出
             writeLog("[%s] return [%s]" % (func_name, func_return), file_dir)
             if '<module>' not in caller_name: # 若函数中调用了子函数，子函数退出时，定制输出应为主函数的定制输出
-                beCusOut( __BeautyLogOut__(caller_name)) # 设为定制输出
+                beCusOut( __BeautyLogOut__(caller_name, file_dir)) # 设为定制输出
             return func_return
 
         except Exception as err:
@@ -96,54 +107,54 @@ def logDecoration(func):
             sys.exit(0)
     return log
 
-'''
+
 class LogDecorationClass:
-    def __init__(self):
-        pass
+    def __init__(self, is_cus_enable=True):
+        self.is_cus_enable = is_cus_enable
 
     def __call__(self, func):
-        @wraps(func)
+        @wraps(func) 
         def log(*args, **kwargs):
             try:
                 file_dir = os.path.dirname(func.__code__.co_filename)
                 caller_name = sys._getframe(1).f_code.co_name
-                
-                beStdOut() # 设为标准输出
-                if caller_name != '<module>': # 若函数中调用了子函数，应打印调用者信息
-                    writeLog("<%s> is calling [%s]" % (caller_name, func.__name__), file_dir)
-                # writeLog("<%s> is called" % func.__name__, file_dir)
-
+                # 判断是否为类内调用
                 try:
                     func_args = str(args[0]).strip('<>').split(' ')
-                    func_id = int(func_args[-1], 16) # 获取对象地址
-                    func_obj = _ctypes.PyObj_FromPtr(func_id) # 通过_ctypes的api进行对内存地址的对象
-                    func_obj_method = str(dir(func_obj))
+                    class_id = int(func_args[-1], 16) # 获取对象地址
+                    func_class = func_args[0].split('.')[-1]
+                    # print(int(str(func.__code__).replace(',', '').strip('<>').split(' ')[4], 16)) # 查看函数地址
                 except:
                     func_args = str(args)
-                    func_obj_method = [func.__name__]
-                if func.__name__ in func_obj_method and 'object' in func_args:
-                    writeLog("<%s> is called as a method" % func.__name__, file_dir) 
+                if '.' in func.__qualname__ and '<local>' not in func.__qualname__: # 若为类内调用
+                    func_name = '<%s %s><%s>' % (func_class, class_id, func.__name__)
+                    caller_name = '<%s %s><%s>' % (func_class, class_id, caller_name)
                 else:
-                    writeLog("<%s> is called as a function" % func.__name__, file_dir)
-
-                beCusOut( __BeautyLogOut__(func.__name__)) # 设为定制输出
-                func_return = str(func(*args, **kwargs))
+                    func_name = func.__name__
 
                 beStdOut() # 设为标准输出
-                writeLog("<%s> return [%s]" % (func.__name__, func_return), file_dir)
-                if caller_name != '<module>': # 若函数中调用了子函数，子函数退出时，定制输出应为主函数的定制输出
-                    beCusOut( __BeautyLogOut__(caller_name)) # 设为定制输出
+                if '<module>' not in caller_name: # 若函数中调用了子函数，应打印调用者信息
+                    writeLog("[%s] is calling [%s]" % (caller_name, func_name), file_dir)
+                writeLog("[%s] is called" % func_name, file_dir)
+
+                beCusOut(__BeautyLogOut__(func_name, file_dir), self.is_cus_enable) # 设为定制输出
+                func_return = func(*args, **kwargs)
+
+                beStdOut() # 设为标准输出
+                writeLog("[%s] return [%s]" % (func_name, func_return), file_dir)
+                if '<module>' not in caller_name: # 若函数中调用了子函数，子函数退出时，定制输出应为主函数的定制输出
+                    beCusOut( __BeautyLogOut__(caller_name, file_dir)) # 设为定制输出
                 return func_return
 
             except Exception as err:
                 beStdOut() # 设为标准输出
-                failExsit("<%s> %s" % (func.__name__, err), file_dir)
+                failExsit("<%s> %s" % (func_name, err), file_dir)
                 sys.exit(0)
         return log
-'''
+
 if __name__ == "__main__":
 
-    @logDecoration
+    @LogDecorationClass()
     def my():
         print('a')
         print('b')
@@ -153,7 +164,7 @@ if __name__ == "__main__":
         except Exception as err:
             print('except')
 
-    @logDecoration
+    @LogDecorationClass()
     def main(args):
         print('main1')
         my()
@@ -165,15 +176,16 @@ if __name__ == "__main__":
             print('except')
 
     class Test:
-        @logDecoration
+        @LogDecorationClass(False)
         def main(self):
             print('I\'m in the test_main')
-        @logDecoration
+        @LogDecorationClass()
         def main2(self):
+            print('m1')
             self.main()
-            print('main2')
+            print('m2')
 
-    @logDecoration
+    @LogDecorationClass()
     def person(name):
         def child():
             return 'Hello child of ' + name
@@ -181,6 +193,7 @@ if __name__ == "__main__":
     test = Test()
     test.main2() # 调用类中方法
     print('this is the split line-------------------------------------')
+    set_cus_disable()
     my() # 调用函数
     print('this is the split line-------------------------------------')
     main(test) # 调用类内方法同名函数
