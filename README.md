@@ -31,3 +31,10 @@ Let your code generate logs automatically
     2020/9/5 skwood0105
     
     使用函数__qualname__属性判断调用是函数or方法，且解决了0.1.2中出现的bug
+# Version:0.1.5  
+    2020/9/9 Aglargil
+    
+    log定制化：
+    1、可以指定某个函数的print输出是否需要改为定制输出（默认为需要）
+    2、可以指定全部函数的print输出是否需要改为定制输出（默认为需要）
+
